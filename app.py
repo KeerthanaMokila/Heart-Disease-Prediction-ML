@@ -12,16 +12,21 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Load Model
+# Load Model and Scaler
 # -----------------------------
 @st.cache_resource
 def load_model():
     try:
-        model = pickle.load(open("models/disease_model.pkl", "rb"))
-        scaler = pickle.load(open("models/scaler.pkl", "rb"))
+        with open("models/disease_model.pkl", "rb") as f:
+            model = pickle.load(f)
+
+        with open("models/scaler.pkl", "rb") as f:
+            scaler = pickle.load(f)
+
         return model, scaler
+
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        st.error(f"❌ Error loading model: {e}")
         return None, None
 
 
@@ -31,149 +36,179 @@ model, scaler = load_model()
 # Title
 # -----------------------------
 st.title("❤️ Heart Disease Prediction System")
-st.markdown(
-    "Predict the likelihood of heart disease using a Machine Learning model."
-)
+
+st.markdown("""
+This application predicts the likelihood of **Heart Disease**
+using a trained Machine Learning model.
+
+> **Note:** This tool is for educational purposes only and should not replace professional medical advice.
+""")
 
 st.divider()
 
 # -----------------------------
-# Input Section
+# Input Form
 # -----------------------------
-col1, col2 = st.columns(2)
+with st.form("prediction_form"):
 
-with col1:
-    age = st.number_input("Age", min_value=1, max_value=120, value=45)
+    col1, col2 = st.columns(2)
 
-    sex = st.selectbox(
-        "Sex",
-        options=[0, 1],
-        format_func=lambda x: "Female" if x == 0 else "Male"
-    )
+    with col1:
 
-    cp = st.selectbox(
-        "Chest Pain Type",
-        options=[0, 1, 2, 3]
-    )
+        age = st.number_input(
+            "Age",
+            min_value=1,
+            max_value=120,
+            value=45
+        )
 
-    trestbps = st.number_input(
-        "Resting Blood Pressure (mm Hg)",
-        min_value=80,
-        max_value=250,
-        value=130
-    )
+        sex = st.selectbox(
+            "Sex",
+            [0, 1],
+            format_func=lambda x: "Female" if x == 0 else "Male"
+        )
 
-    chol = st.number_input(
-        "Serum Cholesterol (mg/dl)",
-        min_value=100,
-        max_value=600,
-        value=240
-    )
+        cp = st.selectbox(
+            "Chest Pain Type",
+            [0, 1, 2, 3]
+        )
 
-    fbs = st.selectbox(
-        "Fasting Blood Sugar > 120 mg/dl",
-        options=[0, 1],
-        format_func=lambda x: "No" if x == 0 else "Yes"
-    )
+        trestbps = st.number_input(
+            "Resting Blood Pressure (mm Hg)",
+            min_value=80,
+            max_value=250,
+            value=130
+        )
 
-    restecg = st.selectbox(
-        "Resting ECG",
-        options=[0, 1, 2]
-    )
+        chol = st.number_input(
+            "Cholesterol (mg/dl)",
+            min_value=100,
+            max_value=600,
+            value=240
+        )
 
-with col2:
+        fbs = st.selectbox(
+            "Fasting Blood Sugar > 120 mg/dl",
+            [0, 1],
+            format_func=lambda x: "No" if x == 0 else "Yes"
+        )
 
-    thalach = st.number_input(
-        "Maximum Heart Rate",
-        min_value=60,
-        max_value=220,
-        value=150
-    )
+        restecg = st.selectbox(
+            "Resting ECG",
+            [0, 1, 2]
+        )
 
-    exang = st.selectbox(
-        "Exercise Induced Angina",
-        options=[0, 1],
-        format_func=lambda x: "No" if x == 0 else "Yes"
-    )
+    with col2:
 
-    oldpeak = st.number_input(
-        "ST Depression (Oldpeak)",
-        min_value=0.0,
-        max_value=10.0,
-        value=1.0,
-        step=0.1
-    )
+        thalach = st.number_input(
+            "Maximum Heart Rate",
+            min_value=60,
+            max_value=220,
+            value=150
+        )
 
-    slope = st.selectbox(
-        "Slope of Peak Exercise ST Segment",
-        options=[0, 1, 2]
-    )
+        exang = st.selectbox(
+            "Exercise Induced Angina",
+            [0, 1],
+            format_func=lambda x: "No" if x == 0 else "Yes"
+        )
 
-    ca = st.selectbox(
-        "Major Vessels Colored by Fluoroscopy",
-        options=[0, 1, 2, 3, 4]
-    )
+        oldpeak = st.number_input(
+            "Oldpeak",
+            min_value=0.0,
+            max_value=10.0,
+            value=1.0,
+            step=0.1
+        )
 
-    thal = st.selectbox(
-        "Thalassemia",
-        options=[0, 1, 2, 3]
-    )
+        slope = st.selectbox(
+            "Slope",
+            [0, 1, 2]
+        )
 
-st.divider()
+        ca = st.selectbox(
+            "Number of Major Vessels",
+            [0, 1, 2, 3, 4]
+        )
+
+        thal = st.selectbox(
+            "Thal",
+            [0, 1, 2, 3]
+        )
+
+    predict = st.form_submit_button("🔍 Predict")
 
 # -----------------------------
 # Prediction
 # -----------------------------
-if st.button("🔍 Predict Heart Disease", use_container_width=True):
+if predict:
 
     if model is None or scaler is None:
-        st.error("Model could not be loaded.")
-    else:
+        st.stop()
 
-        input_data = np.array([[
-            age,
-            sex,
-            cp,
-            trestbps,
-            chol,
-            fbs,
-            restecg,
-            thalach,
-            exang,
-            oldpeak,
-            slope,
-            ca,
-            thal
-        ]])
+    input_data = np.array([[
+        age,
+        sex,
+        cp,
+        trestbps,
+        chol,
+        fbs,
+        restecg,
+        thalach,
+        exang,
+        oldpeak,
+        slope,
+        ca,
+        thal
+    ]])
 
-        try:
-            scaled_data = scaler.transform(input_data)
-            prediction = model.predict(scaled_data)
+    try:
 
-            st.divider()
+        scaled_data = scaler.transform(input_data)
 
-            if prediction[0] == 1:
-                st.error("⚠️ High Risk of Heart Disease")
-                st.write(
-                    "The model predicts that the patient is at a higher risk of heart disease. "
-                    "Please consult a qualified healthcare professional for further evaluation."
+        prediction = model.predict(scaled_data)
+
+        if hasattr(model, "predict_proba"):
+            probability = model.predict_proba(scaled_data)[0][1]
+        else:
+            probability = None
+
+        st.divider()
+
+        if prediction[0] == 1:
+
+            st.error("⚠️ High Risk of Heart Disease")
+
+            if probability is not None:
+                st.metric(
+                    "Risk Probability",
+                    f"{probability*100:.2f}%"
                 )
 
-            else:
-                st.success("✅ Low Risk of Heart Disease")
-                st.write(
-                    "The model predicts a lower risk of heart disease. "
-                    "Maintain a healthy lifestyle and continue regular medical check-ups."
+        else:
+
+            st.success("✅ Low Risk of Heart Disease")
+
+            if probability is not None:
+                st.metric(
+                    "Risk Probability",
+                    f"{probability*100:.2f}%"
                 )
 
-        except Exception as e:
-            st.error(f"Prediction Error: {e}")
+    except Exception as e:
+        st.error(f"Prediction Error: {e}")
 
 # -----------------------------
 # Footer
 # -----------------------------
 st.divider()
 
-st.caption(
-    "⚠️ This application is for educational purposes only and should not be used as a substitute for professional medical advice."
+st.markdown(
+"""
+### About
+
+This Heart Disease Prediction System uses a Machine Learning model trained on clinical parameters to estimate the likelihood of heart disease.
+
+**Disclaimer:** This application is intended for educational purposes only and should not be used as a substitute for professional medical diagnosis or treatment.
+"""
 )
